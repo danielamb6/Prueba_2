@@ -3,212 +3,163 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Panel de Administración</title>
+    <title>Panel de Administración - Insitra</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    
     <style>
+        /* ESTILOS CORE */
         :root {
+            --primary-dark: #0f1c55;
             --primary-blue: #1a2980;
-            --secondary-blue: #26d0ce;
             --accent-color: #AB096A;
-            --accent-hover: #8A0755;
+            --bg-light: #f4f7fc;
             --white: #ffffff;
-            --light-gray: #f4f6f9;
+            --text-grey: #555;
+            
+            /* COLORES ESTADOS ACTUALIZADOS */
+            --st-abierto: #e74c3c;    /* Rojo */
+            --st-espera: #f39c12;     /* Naranja */
+            --st-atencion: #f1c40f;   /* Amarillo */
+            --st-resuelto: #27ae60;   /* Verde */
         }
 
-        * { box-sizing: border-box; margin: 0; padding: 0; font-family: "Arial", sans-serif; }
-        body { background-color: var(--light-gray); min-height: 100vh; display: flex; }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        body { background-color: var(--bg-light); min-height: 100vh; display: flex; }
 
-        /* Sidebar */
-        .sidebar { width: 250px; background: linear-gradient(180deg, var(--primary-blue) 0%, #0f1c55 100%); color: white; position: fixed; height: 100%; padding-top: 20px; transition: 0.3s; z-index: 100; display: flex; flex-direction: column;}
-        
-        .sidebar-logo { text-align: center; padding: 20px; }
-        .sidebar-logo img { max-width: 150px; height: auto; }
-        
-        .menu-item { padding: 15px 25px; cursor: pointer; transition: 0.3s; display: flex; align-items: center; gap: 10px; color: rgba(255,255,255,0.8); text-decoration: none; }
-        .menu-item:hover, .menu-item.active { background-color: var(--accent-color); color: white; border-left: 5px solid white; }
+        /* SIDEBAR */
+        .sidebar { width: 260px; background: linear-gradient(180deg, var(--primary-blue) 0%, var(--primary-dark) 100%); color: white; position: fixed; height: 100%; z-index: 100; box-shadow: 4px 0 15px rgba(0,0,0,0.1); }
+        .sidebar-header { padding: 30px 20px; text-align: center; border-bottom: 1px solid rgba(255,255,255,0.1); }
+        .menu-item { padding: 16px 25px; cursor: pointer; transition: all 0.3s; display: flex; align-items: center; gap: 12px; color: rgba(255,255,255,0.75); text-decoration: none; font-size: 0.95rem; border-left: 4px solid transparent; }
+        .menu-item:hover, .menu-item.active { background-color: rgba(255,255,255,0.1); color: white; border-left-color: var(--accent-color); }
 
-        /* Content */
-        .main-content { margin-left: 250px; width: calc(100% - 250px); padding: 30px; }
-        
-        /* Dashboard & Filters */
-        .filters-bar { background: white; padding: 20px; border-radius: 10px; margin-bottom: 20px; display: flex; gap: 15px; flex-wrap: wrap; align-items: flex-end; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
-        .filter-group { flex: 1; min-width: 150px; }
-        .filter-group label { font-size: 0.8rem; font-weight: bold; color: #555; display: block; margin-bottom: 5px; }
-        .filter-group select, .filter-group input { width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 5px; outline:none; }
-        
-        .btn-limpiar { padding: 8px 20px; background-color: var(--secondary-blue); color: white; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; margin-left: auto; }
+        /* MAIN CONTENT */
+        .main-content { margin-left: 260px; width: calc(100% - 260px); padding: 40px; }
+        h1.section-title { color: var(--primary-dark); margin-bottom: 30px; font-weight: 700; position: relative; padding-bottom: 15px; border-bottom: 4px solid var(--accent-color); display: inline-block; }
 
-        /* Tables */
-        .table-wrapper { background: white; border-radius: 10px; overflow: hidden; box-shadow: 0 5px 15px rgba(0,0,0,0.05); margin-bottom: 30px; }
+        /* KPI & CARDS */
+        .kpi-container { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 25px; margin-bottom: 40px; }
+        .kpi-card { background: var(--white); padding: 25px; border-radius: 15px; box-shadow: 0 10px 25px rgba(0,0,0,0.05); position: relative; overflow: hidden; display: flex; justify-content: space-between; align-items: center; }
+        .kpi-content h3 { font-size: 0.9rem; color: var(--text-grey); margin-bottom: 10px; text-transform: uppercase; }
+        .kpi-content .number { font-size: 2.5rem; font-weight: 800; line-height: 1; }
+        .kpi-icon { font-size: 3.5rem; opacity: 0.15; position: absolute; right: 20px; bottom: 15px; }
+        
+        .card-total { border-bottom: 4px solid var(--primary-blue); } .card-total .number { color: var(--primary-blue); }
+        .card-abierto { background: linear-gradient(135deg, #fff 60%, #ffebee 100%); border-bottom: 4px solid var(--st-abierto); } .card-abierto .number { color: var(--st-abierto); }
+        .card-atencion { background: linear-gradient(135deg, #fff 60%, #fff9c4 100%); border-bottom: 4px solid var(--st-atencion); } .card-atencion .number { color: #d4ac0d; }
+        .card-resuelto { background: linear-gradient(135deg, #fff 60%, #e8f5e9 100%); border-bottom: 4px solid var(--st-resuelto); } .card-resuelto .number { color: var(--st-resuelto); }
+
+        .table-container { background: var(--white); border-radius: 15px; overflow: hidden; box-shadow: 0 5px 20px rgba(0,0,0,0.05); padding: 20px; }
         table { width: 100%; border-collapse: collapse; }
-        th { background: var(--primary-blue); color: white; padding: 15px; text-align: left; }
-        td { padding: 12px 15px; border-bottom: 1px solid #eee; color: #444; vertical-align: middle; }
-        tr:hover { background-color: #f8f9fa; }
+        th { background: #f8f9fa; color: var(--primary-dark); padding: 15px; text-align: left; font-weight: 700; border-bottom: 2px solid #eee; }
+        td { padding: 15px; border-bottom: 1px solid #eee; color: #555; vertical-align: middle; }
+        
+        .badge-estado { padding: 5px 10px; border-radius: 15px; font-weight: 700; font-size: 0.75rem; text-transform: uppercase; border: 1px solid transparent; }
+        .bdg-abierto { background: #ffebee; color: var(--st-abierto); border-color: #ffcdd2; }
+        .bdg-espera_refaccion { background: #fff3e0; color: var(--st-espera); border-color: #ffe0b2; }
+        .bdg-en_atencion { background: #fffde7; color: #bc9e0a; border-color: #fff9c4; }
+        .bdg-resuelto { background: #e8f5e9; color: var(--st-resuelto); border-color: #c8e6c9; }
 
-        /* KPI Cards */
-        .kpi-container { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin-bottom: 20px; }
-        .kpi-card { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); border-top: 4px solid var(--accent-color); }
-        .kpi-card h3 { font-size: 0.9rem; color: #666; }
-        .kpi-card .number { font-size: 1.8rem; font-weight: bold; color: var(--primary-blue); margin-top: 10px; }
-
-        /* Estados Coloreados */
-        .status-select { padding: 6px 10px; border-radius: 20px; border: 1px solid #ddd; font-weight: bold; font-size: 0.75rem; cursor: pointer; width: 100%; }
-        .st-abierto { background: #ffebee; color: #c62828; border-color: #ef9a9a; }
-        .st-en_atencion { background: #e3f2fd; color: #1565c0; border-color: #64b5f6; }
-        .st-espera_refaccion { background: #fff8e1; color: #f57f17; border-color: #ffb74d; }
-        .st-resuelto { background: #e8f5e9; color: #2e7d32; border-color: #81c784; }
-
-        /* Toggle Button */
-        .btn-toggle { padding: 6px 12px; border-radius: 15px; border: none; cursor: pointer; font-weight: bold; color: white; font-size: 0.75rem; display: inline-flex; align-items: center; gap: 5px; }
-        .btn-on { background: #27ae60; }
-        .btn-off { background: #c0392b; }
-
-        .view-section { display: none; }
+        .filters-bar { background: var(--white); padding: 20px; border-radius: 15px; margin-bottom: 30px; display: flex; gap: 15px; flex-wrap: wrap; align-items: flex-end; box-shadow: 0 5px 15px rgba(0,0,0,0.03); }
+        .filter-group { flex: 1; min-width: 150px; }
+        .filter-group label { font-size: 0.85rem; font-weight: 600; color: var(--primary-dark); display: block; margin-bottom: 5px; }
+        .filter-group select, .filter-group input { width: 100%; padding: 10px; border: 1px solid #dde2ec; border-radius: 8px; font-size: 0.9rem; }
+        .btn-limpiar { padding: 10px 20px; background-color: var(--primary-blue); color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; margin-left: auto; }
+        
+        .view-section { display: none; animation: fadeIn 0.4s ease; }
         .view-section.active { display: block; }
-        
-        .tech-tabs { display: flex; gap: 10px; margin-bottom: 20px; overflow-x: auto; padding-bottom: 5px; }
-        .tech-tab { padding: 10px 20px; background: white; border: 1px solid #ddd; border-radius: 20px; cursor: pointer; transition: 0.3s; }
-        .tech-tab.active { background: var(--accent-color); color: white; border-color: var(--accent-color); }
-        
-        .btn-agregar { padding: 10px 20px; background: var(--accent-color); color: white; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; }
-
-        h1 { color: var(--primary-blue); margin-bottom: 20px; border-bottom: 3px solid var(--secondary-blue); padding-bottom: 10px; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
     </style>
 </head>
 <body>
 
     <div class="sidebar">
-        <div class="sidebar-logo">
-            <img src="logo.png" alt="Logo Empresa">
+        <div class="sidebar-header"><h3>INSITRA ADMIN</h3></div>
+        <div style="padding-top: 20px;">
+            <a class="menu-item active" onclick="mostrarVista('dashboard')"><i class="fas fa-chart-pie"></i> Dashboard</a>
+            <a class="menu-item" onclick="mostrarVista('incidencias')"><i class="fas fa-ticket-alt"></i> Incidencias</a>
+            <a class="menu-item" onclick="mostrarVista('creacion-tickets')"><i class="fas fa-plus-circle"></i> Crear Ticket</a>
+            <a class="menu-item" onclick="mostrarVista('reportes')"><i class="fas fa-file-pdf"></i> Reportes</a>
+            <a class="menu-item" onclick="mostrarVista('tecnicos')"><i class="fas fa-user-cog"></i> Técnicos</a>
+            <a class="menu-item" onclick="mostrarVista('clientes')"><i class="fas fa-building"></i> Clientes</a>
         </div>
-        <a class="menu-item active" onclick="mostrarVista('dashboard')"><i class="fas fa-chart-line"></i> Dashboard</a>
-        <a class="menu-item" onclick="mostrarVista('incidencias')"><i class="fas fa-ticket-alt"></i> Incidencias</a>
-        <a class="menu-item" onclick="mostrarVista('gestion-tecnica')"><i class="fas fa-tools"></i> Gestión Técnica</a>
-        <a class="menu-item" onclick="mostrarVista('tecnicos')"><i class="fas fa-users-cog"></i> Técnicos</a>
-        <a class="menu-item" onclick="mostrarVista('clientes')"><i class="fas fa-users"></i> Clientes</a>
-        <a class="menu-item" onclick="mostrarVista('reportes')"><i class="fas fa-file-invoice"></i> Reportes</a>
-        
-        <div style="margin-top: auto; padding: 20px;">
-            <a href="registro_usuario.html" class="menu-item" style="background: rgba(255,255,255,0.1); border-radius: 5px; margin-bottom: 10px;">
-                <i class="fas fa-user-shield"></i> Gestión Usuarios
-            </a>
-            <button onclick="window.location.href='login.html'" style="width:100%; padding:10px; background:rgba(255,255,255,0.2); border:none; color:white; cursor:pointer; border-radius:5px;">Cerrar Sesión</button>
-       </div>
     </div>
 
     <div class="main-content">
         
         <div id="dashboard" class="view-section active">
-            <h1>Dashboard General</h1>
-            
+            <h1 class="section-title">Dashboard General</h1>
             <div class="kpi-container">
-                <div class="kpi-card"><h3>Total Tickets</h3><div class="number" id="kpi-tickets">0</div></div>
-                <div class="kpi-card"><h3>Técnicos Activos</h3><div class="number" id="kpi-tecnicos">0</div></div>
-                <div class="kpi-card"><h3>Empresas</h3><div class="number" id="kpi-empresas">0</div></div>
-                <div class="kpi-card"><h3>Clientes Activos</h3><div class="number" id="kpi-clientes">0</div></div>
+                <div class="kpi-card card-total"><div class="kpi-content"><h3>Total Tickets</h3><div class="number" id="kpi-total">0</div></div><i class="fas fa-clipboard-list kpi-icon"></i></div>
+                <div class="kpi-card card-abierto"><div class="kpi-content"><h3>Abiertos</h3><div class="number" id="kpi-abiertos">0</div></div><i class="fas fa-exclamation-circle kpi-icon"></i></div>
+                <div class="kpi-card card-atencion"><div class="kpi-content"><h3>En Atención</h3><div class="number" id="kpi-atencion">0</div></div><i class="fas fa-tools kpi-icon"></i></div>
+                <div class="kpi-card card-resuelto"><div class="kpi-content"><h3>Resueltos</h3><div class="number" id="kpi-resueltos">0</div></div><i class="fas fa-check-circle kpi-icon"></i></div>
             </div>
-
-            <div class="filters-bar">
-                <div class="filter-group"><label>Fecha Inicio</label><input type="date" id="filtro-fecha-ini" onchange="aplicarFiltrosGlobales()"></div>
-                <div class="filter-group"><label>Fecha Fin</label><input type="date" id="filtro-fecha-fin" onchange="aplicarFiltrosGlobales()"></div>
-                <div class="filter-group">
-                    <label>Técnico que Atendió</label>
-                    <select id="filtro-tecnico" onchange="aplicarFiltrosGlobales()"><option value="">Todos</option></select>
+            <div class="table-container">
+                <h3>Últimos Tickets (Resumen)</h3>
+                <div style="overflow-x: auto;">
+                    <table>
+                        <thead><tr><th>ID</th><th>Empresa</th><th>Falla</th><th>Técnico</th><th>Fecha</th><th>Estado</th></tr></thead>
+                        <tbody id="tabla-dashboard-resumen"></tbody>
+                    </table>
                 </div>
-                <div class="filter-group">
-                    <label>Tipo de Falla</label>
-                    <select id="filtro-falla" onchange="aplicarFiltrosGlobales()"><option value="">Todas</option></select>
-                </div>
-                <button class="btn-limpiar" onclick="limpiarFiltros()">Limpiar Filtros</button>
-            </div>
-
-            <h3>Últimos Tickets (Conectado a Fichas Técnicas)</h3>
-            <div class="table-wrapper">
-                <table>
-                    <thead>
-                        <tr>
-                            <th>ID Ticket</th>
-                            <th>Falla Reportada</th>
-                            <th>Diagnóstico (Ficha)</th>
-                            <th>Técnico</th>
-                            <th>Estado (Cambiar)</th>
-                        </tr>
-                    </thead>
-                    <tbody id="tabla-dashboard"></tbody>
-                </table>
             </div>
         </div>
 
-        <div id="incidencias" class="view-section">
-            <h1>Todas las Incidencias (Desglosado)</h1>
-            <div class="table-wrapper">
-                <table>
-                    <thead><tr><th>ID</th><th>Cliente / Empresa</th><th>Autobús</th><th>Falla</th><th>Estado Actual</th></tr></thead>
-                    <tbody id="tabla-incidencias"></tbody>
-                </table>
+        <div id="creacion-tickets" class="view-section">
+            <h1 class="section-title">Creación de Incidencias</h1>
+            <div class="table-container" style="max-width: 800px; margin: 0 auto; padding: 30px;">
+                <form id="form-nuevo-ticket" style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                    <div class="filter-group">
+                        <label>Tipo de Ticket</label>
+                        <input type="text" value="INTERNO" readonly style="background-color: #eee; cursor: not-allowed;">
+                    </div>
+                    <div class="filter-group">
+                        <label>Número de Autobús</label>
+                        <input type="text" id="tk-autobus" placeholder="Ej. ECO-123" required>
+                    </div>
+                    <div class="filter-group">
+                        <label>Equipo</label>
+                        <select id="tk-equipo-id" required onchange="cargarFallasPorEquipo(this.value)">
+                            <option value="">Cargando equipos...</option>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <label>Falla Reportada</label>
+                        <select id="tk-falla-id" required disabled>
+                            <option value="">Seleccione primero un equipo...</option>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <label>Cliente (Reporta)</label>
+                        <select id="tk-cliente" required>
+                            <option value="">Cargando clientes...</option>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <label>Técnico (Atiende)</label>
+                        <select id="tk-tecnico" required>
+                            <option value="">Cargando técnicos...</option>
+                        </select>
+                    </div>
+                    <div style="grid-column: span 2; margin-top: 20px; display: flex; gap: 10px;">
+                        <button type="button" onclick="guardarNuevoTicket()" class="btn-agregar" style="flex: 1; padding: 15px;">
+                            <i class="fas fa-save"></i> Generar Ticket
+                        </button>
+                        <button type="button" class="btn-limpiar" onclick="limpiarFormularioTicket()" style="background-color: #555;">
+                            <i class="fas fa-eraser"></i> Limpiar
+                        </button>
+                    </div>
+                </form>
             </div>
         </div>
-
-        <div id="gestion-tecnica" class="view-section">
-            <h1>Gestión Técnica</h1>
-            <div class="tech-tabs">
-                <button class="tech-tab active" onclick="cargarCatalogo('cat_elementos', this)">Elementos</button>
-                <button class="tech-tab" onclick="cargarCatalogo('detalle_revision', this)">Detalle Revisión</button>
-                <button class="tech-tab" onclick="cargarCatalogo('solucion', this)">Soluciones</button>
-                <button class="tech-tab" onclick="cargarCatalogo('falla_reportada', this)">Tipo Falla</button>
-            </div>
-            
-            <div style="margin-bottom:15px; display:flex; gap:10px;">
-                <input type="text" id="nuevo-item-input" placeholder="Nuevo valor..." style="padding:10px; flex:1; border:1px solid #ddd; border-radius:5px;">
-                <button class="btn-agregar" onclick="agregarItemCatalogo()">Agregar</button>
-            </div>
-            
-            <div class="table-wrapper">
-                <table>
-                    <thead><tr><th>ID</th><th>Descripción</th><th>Acción</th></tr></thead>
-                    <tbody id="tabla-catalogo-body"></tbody>
-                </table>
-            </div>
-        </div>
-
-        <div id="tecnicos" class="view-section">
-            <h1>Técnicos (Tabla BD)</h1>
-            <div class="table-wrapper">
-                <table>
-                    <thead><tr><th>Nombre</th><th>Especialidad</th><th>Estado (Activo/Inactivo)</th></tr></thead>
-                    <tbody id="tabla-tecnicos"></tbody>
-                </table>
-            </div>
-        </div>
-
-        <div id="clientes" class="view-section">
-            <h1>Clientes (Tabla BD)</h1>
-            <div class="table-wrapper">
-                <table>
-                    <thead><tr><th>Nombre</th><th>Empresa</th><th>Estado (Activo/Inactivo)</th></tr></thead>
-                    <tbody id="tabla-clientes"></tbody>
-                </table>
-            </div>
-        </div>
-
-        <div id="reportes" class="view-section">
-            <h1>Reportes Generados</h1>
-            <p style="margin-bottom:15px; color:#666;">Historial de Fichas Técnicas Cerradas.</p>
-            <div class="table-wrapper">
-                <table>
-                    <thead><tr><th>ID Ficha</th><th>Ticket Origen</th><th>Técnico</th><th>Solución</th><th>Fecha Cierre</th></tr></thead>
-                    <tbody id="tabla-reportes"></tbody>
-                </table>
-            </div>
-        </div>
-
     </div>
 
     <script>
-        const API = 'http://127.0.0.1:5000/api';
+        const API = 'http://192.168.1.59:5000/api';
         let globalTickets = [];
-        let catalogoActual = 'cat_elementos';
 
         window.onload = function() {
             mostrarVista('dashboard');
@@ -217,231 +168,136 @@
 
         function mostrarVista(id) {
             document.querySelectorAll('.view-section').forEach(v => v.classList.remove('active'));
-            document.getElementById(id).classList.add('active');
             document.querySelectorAll('.menu-item').forEach(m => m.classList.remove('active'));
-            // Lógica de menús activos
-            document.querySelectorAll('.menu-item').forEach(m => {
-                if(m.getAttribute('onclick')?.includes(id)) m.classList.add('active');
-            });
-
-            if(id === 'gestion-tecnica') cargarCatalogo('cat_elementos', document.querySelector('.tech-tab'));
-            if(id === 'tecnicos') cargarTecnicos();
-            if(id === 'clientes') cargarClientes();
-            if(id === 'reportes') cargarReportes();
-            if(id === 'incidencias') renderIncidencias(globalTickets);
+            const target = document.getElementById(id);
+            if(target) target.classList.add('active');
+            
+            if(id === 'creacion-tickets') {
+                poblarSelectsTicket();
+            }
         }
 
         async function cargarDatosGlobales() {
-            // 1. Cargar KPIs
             try {
-                const resKpi = await fetch(`${API}/dashboard/kpis`);
-                const kpis = await resKpi.json();
-                document.getElementById('kpi-tickets').innerText = kpis.total_tickets || 0;
-                document.getElementById('kpi-tecnicos').innerText = kpis.total_tecnicos || 0;
-                document.getElementById('kpi-empresas').innerText = kpis.total_empresas || 0;
-                document.getElementById('kpi-clientes').innerText = kpis.total_clientes || 0;
-            } catch(e) { console.error("Error KPI", e); }
-
-            // 2. Cargar Tickets
-            try {
-                const resT = await fetch(`${API}/tickets`);
-                globalTickets = await resT.json();
-                
-                // Llenar filtros dinámicamente
-                const tecs = [...new Set(globalTickets.map(t => t.tecnico_nombre).filter(Boolean))];
-                const fallas = [...new Set(globalTickets.map(t => t.falla_descripcion).filter(Boolean))];
-                
-                const selTec = document.getElementById('filtro-tecnico');
-                const selFal = document.getElementById('filtro-falla');
-                
-                selTec.innerHTML = '<option value="">Todos</option>';
-                tecs.forEach(t => selTec.add(new Option(t, t)));
-                
-                selFal.innerHTML = '<option value="">Todas</option>';
-                fallas.forEach(f => selFal.add(new Option(f, f)));
-
-                aplicarFiltrosGlobales();
-            } catch(e) { console.error("Error tickets", e); }
-        }
-
-        function aplicarFiltrosGlobales() {
-            const fIni = document.getElementById('filtro-fecha-ini').value;
-            const fFin = document.getElementById('filtro-fecha-fin').value;
-            const fTec = document.getElementById('filtro-tecnico').value;
-            const fFal = document.getElementById('filtro-falla').value;
-
-            let filtrados = globalTickets.filter(t => {
-                let cumple = true;
-                if(fIni && t.fecha_creacion < fIni) cumple = false;
-                if(fFin && t.fecha_creacion > fFin) cumple = false;
-                if(fTec && t.tecnico_nombre !== fTec) cumple = false;
-                if(fFal && t.falla_descripcion !== fFal) cumple = false;
-                return cumple;
-            });
-            renderDashboardTable(filtrados);
-            renderIncidencias(filtrados);
-        }
-
-        function renderDashboardTable(datos) {
-            const tbody = document.getElementById('tabla-dashboard');
-            tbody.innerHTML = '';
-            // Mostrar últimos 10
-            datos.slice(0, 10).forEach(t => {
-                const estado = t.estado || 'ABIERTO';
-                const claseSt = `st-${estado.toLowerCase().replace(' ', '_')}`;
-                
-                tbody.innerHTML += `
-                    <tr>
-                        <td>#${t.id}</td>
-                        <td>${t.falla_descripcion || '-'}</td>
-                        <td style="color:#666; font-style:italic;">${t.ficha_diagnostico || 'Sin Ficha'}</td>
-                        <td>${t.tecnico_nombre || 'No Asignado'}</td>
-                        <td style="width:200px">
-                             <select class="status-select ${claseSt}" onchange="cambiarEstado(${t.id}, this.value, this)">
-                                <option value="ABIERTO" ${estado==='ABIERTO'?'selected':''}>ABIERTO</option>
-                                <option value="EN ATENCION" ${estado==='EN ATENCION'?'selected':''}>EN ATENCIÓN</option>
-                                <option value="ESPERA_REFACCION" ${estado==='ESPERA_REFACCION'?'selected':''}>ESPERA REFACCIÓN</option>
-                                <option value="RESUELTO" ${estado==='RESUELTO'?'selected':''}>RESUELTO</option>
-                            </select>
-                        </td>
-                    </tr>
-                `;
-            });
-        }
-
-        function renderIncidencias(datos) {
-            const tbody = document.getElementById('tabla-incidencias');
-            tbody.innerHTML = '';
-            datos.forEach(t => {
-                tbody.innerHTML += `
-                    <tr>
-                        <td><strong>${t.id}</strong></td>
-                        <td>${t.cliente_nombre || ''} <br><small style="color:#888">${t.empresa || ''}</small></td>
-                        <td>${t.num_autobus || '-'}</td>
-                        <td>${t.falla_descripcion || '-'}</td>
-                        <td><span class="status-select st-${(t.estado||'ABIERTO').toLowerCase().replace(' ','_')}" style="cursor:default">${t.estado}</span></td>
-                    </tr>
-                `;
-            });
-        }
-
-        async function cambiarEstado(id, nuevo, el) {
-            el.className = `status-select st-${nuevo.toLowerCase().replace(' ', '_')}`;
-            await fetch(`${API}/tickets/${id}/estado`, {
-                method: 'PUT',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({estado: nuevo})
-            });
-        }
-
-        // --- GESTIÓN TÉCNICA (Catálogos Conectados) ---
-        async function cargarCatalogo(tabla, btn) {
-            catalogoActual = tabla;
-            if(btn) {
-                document.querySelectorAll('.tech-tab').forEach(t => t.classList.remove('active'));
-                btn.classList.add('active');
+                const res = await fetch(`${API}/tickets`);
+                if(!res.ok) throw new Error("Error API Tickets");
+                globalTickets = await res.json();
+                renderizarDashboard(globalTickets);
+            } catch (e) { 
+                console.error(e); 
             }
-            const tbody = document.getElementById('tabla-catalogo-body');
-            tbody.innerHTML = '<tr><td colspan="3">Cargando...</td></tr>';
+        }
+
+        function renderizarDashboard(datos) {
+            document.getElementById('kpi-total').innerText = datos.length;
+            const tbody = document.getElementById('tabla-dashboard-resumen');
+            tbody.innerHTML = '';
+            datos.slice(0, 10).forEach(t => {
+                const claseSt = `bdg-${(t.estado||'').toLowerCase().replace(' ', '_')}`;
+                tbody.innerHTML += `<tr><td>#${t.id}</td><td>${t.empresa_nombre || '-'}</td><td>${t.falla_descripcion || '-'}</td><td>${t.tecnico_nombre || 'Sin Asignar'}</td><td>${t.fecha_creacion}</td><td><span class="badge-estado ${claseSt}">${t.estado}</span></td></tr>`;
+            });
+        }
+
+        // --- LÓGICA DE CREACIÓN DE TICKETS ---
+
+        async function poblarSelectsTicket() {
             try {
-                const res = await fetch(`${API}/catalogos/${tabla}`);
-                const data = await res.json();
-                tbody.innerHTML = '';
-                data.forEach(d => {
-                    tbody.innerHTML += `
-                        <tr>
-                            <td>${d.id}</td>
-                            <td>${d.descripcion}</td>
-                            <td><button onclick="eliminarItem('${tabla}',${d.id})" style="color:red; border:none; background:none; cursor:pointer;"><i class="fas fa-trash"></i></button></td>
-                        </tr>
-                    `;
+                // 1. Cargar Equipos (de la tabla 'equipo')
+                const resEq = await fetch(`${API}/catalogos/equipo`);
+                const equipos = await resEq.json();
+                const selEq = document.getElementById('tk-equipo-id');
+                selEq.innerHTML = '<option value="">Seleccione equipo...</option>';
+                equipos.forEach(e => {
+                    // Usamos e.equipo para el nombre y e.id para el valor segun tu tabla
+                    selEq.add(new Option(e.equipo, e.id)); 
                 });
-            } catch(e) { tbody.innerHTML = '<tr><td colspan="3">Error cargando catálogo</td></tr>'; }
+
+                // 2. Cargar Técnicos
+                const resTec = await fetch(`${API}/tecnicos`);
+                const tecnicos = await resTec.json();
+                const selTec = document.getElementById('tk-tecnico');
+                selTec.innerHTML = '<option value="">Seleccione técnico...</option>';
+                tecnicos.forEach(t => { if(t.activo) selTec.add(new Option(`${t.nombre} ${t.primer_apellido}`, t.id)); });
+
+                // 3. Cargar Clientes
+                const resCli = await fetch(`${API}/clientes`);
+                const clientes = await resCli.json();
+                const selCli = document.getElementById('tk-cliente');
+                selCli.innerHTML = '<option value="">Seleccione cliente...</option>';
+                clientes.forEach(c => { if(c.activo) selCli.add(new Option(c.nombre, c.id)); });
+
+            } catch (e) {
+                console.error("Error cargando catálogos", e);
+            }
         }
 
-        async function agregarItemCatalogo() {
-            const val = document.getElementById('nuevo-item-input').value;
-            if(!val) return;
-            await fetch(`${API}/catalogos/${catalogoActual}`, {
-                method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({valor:val})
-            });
-            document.getElementById('nuevo-item-input').value = '';
-            cargarCatalogo(catalogoActual);
-        }
-        
-        async function eliminarItem(tabla, id) {
-            if(!confirm("¿Eliminar?")) return;
-            await fetch(`${API}/catalogos/${tabla}/${id}`, {method:'DELETE'});
-            cargarCatalogo(tabla);
+        async function cargarFallasPorEquipo(equipoId) {
+            const selFalla = document.getElementById('tk-falla-id');
+            if (!equipoId) {
+                selFalla.disabled = true;
+                selFalla.innerHTML = '<option value="">Seleccione primero un equipo...</option>';
+                return;
+            }
+
+            try {
+                // Filtramos fallas por id_equipo segun tu estructura de tabla 'falla_reportada'
+                const res = await fetch(`${API}/catalogos/falla_reportada?id_equipo=${equipoId}`);
+                const fallas = await res.json();
+                
+                selFalla.innerHTML = '<option value="">Seleccione falla...</option>';
+                selFalla.disabled = false;
+                
+                fallas.forEach(f => {
+                    // Usamos f.falla para la descripción y f.id para el valor
+                    selFalla.add(new Option(f.falla, f.id));
+                });
+            } catch (e) {
+                console.error("Error al cargar fallas", e);
+            }
         }
 
-        // --- TÉCNICOS Y CLIENTES (Toggle Activo) ---
-        async function cargarTecnicos() {
-            const res = await fetch(`${API}/tecnicos`);
-            const data = await res.json();
-            const tbody = document.getElementById('tabla-tecnicos');
-            tbody.innerHTML = '';
-            data.forEach(t => {
-                const btnClass = t.activo ? 'btn-on' : 'btn-off';
-                const text = t.activo ? 'ACTIVO' : 'INACTIVO';
-                tbody.innerHTML += `
-                    <tr>
-                        <td>${t.nombre} ${t.primer_apellido}</td>
-                        <td>${t.especialidad || 'General'}</td>
-                        <td><button class="btn-toggle ${btnClass}" onclick="toggleActivo('tecnicos', ${t.id}, cargarTecnicos)">${text}</button></td>
-                    </tr>
-                `;
-            });
+        async function guardarNuevoTicket() {
+            const ticket = {
+                tipo: "INTERNO",
+                num_autobus: document.getElementById('tk-autobus').value,
+                id_equipo: document.getElementById('tk-equipo-id').value,
+                id_falla: document.getElementById('tk-falla-id').value,
+                id_cliente: document.getElementById('tk-cliente').value,
+                id_tecnico: document.getElementById('tk-tecnico').value,
+                estado: 'ABIERTO',
+                fecha_creacion: new Date().toISOString().split('T')[0]
+            };
+
+            if(!ticket.num_autobus || !ticket.id_equipo || !ticket.id_falla || !ticket.id_cliente || !ticket.id_tecnico) {
+                alert("Por favor, complete todos los campos obligatorios");
+                return;
+            }
+
+            try {
+                const res = await fetch(`${API}/tickets`, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify(ticket)
+                });
+
+                if(res.ok) {
+                    alert("Ticket creado con éxito");
+                    limpiarFormularioTicket();
+                    cargarDatosGlobales();
+                    mostrarVista('dashboard');
+                } else {
+                    alert("Error al guardar el ticket");
+                }
+            } catch (error) {
+                console.error("Error:", error);
+            }
         }
 
-        async function cargarClientes() {
-            const res = await fetch(`${API}/clientes`);
-            const data = await res.json();
-            const tbody = document.getElementById('tabla-clientes');
-            tbody.innerHTML = '';
-            data.forEach(c => {
-                const btnClass = c.activo ? 'btn-on' : 'btn-off';
-                const text = c.activo ? 'ACTIVO' : 'INACTIVO';
-                tbody.innerHTML += `
-                    <tr>
-                        <td>${c.nombre} ${c.primer_apellido}</td>
-                        <td>${c.empresa || '-'}</td>
-                        <td><button class="btn-toggle ${btnClass}" onclick="toggleActivo('cliente', ${c.id}, cargarClientes)">${text}</button></td>
-                    </tr>
-                `;
-            });
-        }
-
-        async function toggleActivo(tipo, id, callback) {
-            if(!confirm("¿Cambiar estado?")) return;
-            await fetch(`${API}/${tipo}/${id}/toggle`, {method:'PUT'});
-            callback();
-        }
-
-        async function cargarReportes() {
-            const res = await fetch(`${API}/reportes`);
-            const data = await res.json();
-            const tbody = document.getElementById('tabla-reportes');
-            tbody.innerHTML = '';
-            data.forEach(r => {
-                tbody.innerHTML += `
-                    <tr>
-                        <td>#${r.id}</td>
-                        <td>Ticket #${r.id_ticket}</td>
-                        <td>${r.tecnico || '-'}</td>
-                        <td>${r.solucion || '-'}</td>
-                        <td>${r.fecha_fin || '-'}</td>
-                    </tr>
-                `;
-            });
-        }
-
-        function limpiarFiltros() {
-            document.getElementById('filtro-fecha-ini').value = '';
-            document.getElementById('filtro-fecha-fin').value = '';
-            document.getElementById('filtro-tecnico').value = '';
-            document.getElementById('filtro-falla').value = '';
-            aplicarFiltrosGlobales();
+        function limpiarFormularioTicket() {
+            document.getElementById('form-nuevo-ticket').reset();
+            const selFalla = document.getElementById('tk-falla-id');
+            selFalla.disabled = true;
+            selFalla.innerHTML = '<option value="">Seleccione primero un equipo...</option>';
         }
     </script>
 </body>
